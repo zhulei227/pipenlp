@@ -85,15 +85,6 @@ nlp.pipe(RemoveDigits())\
    .pipe(RemovePunctuation())\
    .pipe(RemoveWhitespace())
 ```
-
-
-
-
-    <pipenlp.pipenlp.PipeNLP at 0x2b60f15cb88>
-
-
-
-
 ```python
 data["output"]=nlp.fit(data["text"]).transform(data["text"]).head(5)
 data[["output"]].head(5)
