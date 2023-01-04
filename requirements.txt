@@ -1,0 +1,12 @@
+pyyaml<=5.4
+numpy
+tqdm
+pandas
+scikit-learn
+gensim
+lightgbm
+jieba
+pyahocorasick
+torch
+torchtext==0.4
+scipy
