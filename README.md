@@ -1,4 +1,4 @@
-# pipenlp  
+﻿# pipenlp  
   
 ## 介绍   
 `pipenlp`包可以方便地将NLP任务构建为`Pipline`任务流，目前主要包含的功能有：  
@@ -36,19 +36,6 @@ data.head(5)
 
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -116,19 +103,6 @@ data[["output"]].head(5)
 
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -172,15 +146,6 @@ nlp=PipeNLP()
 nlp.pipe(ExtractChineseWords())\
    .pipe(ExtractJieBaWords())
 ```
-
-
-
-
-    <pipenlp.pipenlp.PipeNLP at 0x2b61b7e3508>
-
-
-
-
 ```python
 data["output"]=nlp.fit(data["text"]).transform(data["text"]).head(5)
 data[["output"]].head(5)
@@ -190,19 +155,6 @@ data[["output"]].head(5)
 
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -252,36 +204,11 @@ nlp.pipe(ExtractChineseWords())\
    .pipe(ExtractJieBaWords())\
    .pipe(BagOfWords())
 ```
-
-
-
-
-    <pipenlp.pipenlp.PipeNLP at 0x2b61b7e9a08>
-
-
-
-
 ```python
 nlp.fit(data["text"]).transform(data["text"]).head(5)
 ```
 
-
-
-
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -446,15 +373,6 @@ nlp.pipe(ExtractChineseWords())\
    .pipe(ExtractJieBaWords())\
    .pipe(LdaTopicModel(num_topics=10))
 ```
-
-
-
-
-    <pipenlp.pipenlp.PipeNLP at 0x2b61fe9ec48>
-
-
-
-
 ```python
 nlp.fit(data["text"]).transform(data["text"]).head(5)
 ```
@@ -463,19 +381,6 @@ nlp.fit(data["text"]).transform(data["text"]).head(5)
 
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -573,15 +478,6 @@ nlp.pipe(ExtractChineseWords())\
    .pipe(ExtractJieBaWords())\
    .pipe(FastTextModel(embedding_size=8))
 ```
-
-
-
-
-    <pipenlp.pipenlp.PipeNLP at 0x2b62d91ea88>
-
-
-
-
 ```python
 nlp.fit(data["text"]).transform(data["text"]).head(5)
 ```
@@ -590,19 +486,6 @@ nlp.fit(data["text"]).transform(data["text"]).head(5)
 
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -689,15 +572,6 @@ nlp.pipe(ExtractChineseWords())\
    .pipe(BagOfWords())\
    .pipe(PCADecomposition(n_components=2))
 ```
-
-
-
-
-    <pipenlp.pipenlp.PipeNLP at 0x2b62d918a88>
-
-
-
-
 ```python
 nlp.fit(data["text"]).transform(data["text"]).head(5)
 ```
@@ -706,19 +580,6 @@ nlp.fit(data["text"]).transform(data["text"]).head(5)
 
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -771,15 +632,6 @@ nlp.pipe(ExtractChineseWords())\
    .pipe(BagOfWords())\
    .pipe(LGBMClassification(y=data["label"]))
 ```
-
-
-
-
-    <pipenlp.pipenlp.PipeNLP at 0x2b62d931108>
-
-
-
-
 ```python
 nlp.fit(data["text"]).transform(data["text"]).head(5)
 ```
@@ -788,19 +640,6 @@ nlp.fit(data["text"]).transform(data["text"]).head(5)
 
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -853,15 +692,6 @@ nlp.pipe(ExtractChineseWords())\
    .pipe(PCADecomposition(n_components=8))\
    .pipe(LogisticRegressionClassification(y=data["label"]))
 ```
-
-
-
-
-    <pipenlp.pipenlp.PipeNLP at 0x2b633e699c8>
-
-
-
-
 ```python
 nlp.fit(data["text"]).transform(data["text"]).head(5)
 ```
@@ -870,19 +700,6 @@ nlp.fit(data["text"]).transform(data["text"]).head(5)
 
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -943,15 +760,6 @@ nlp.pipe(ExtractChineseWords())\
    .pipe(PCADecomposition())\
    .pipe(LogisticRegressionClassification())
 ```
-
-
-
-
-    <pipenlp.pipenlp.PipeNLP at 0x2b6348d4488>
-
-
-
-
 ```python
 nlp.load("nlp.pkl")
 ```
@@ -965,19 +773,6 @@ nlp.transform(data["text"]).head(5)
 
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
