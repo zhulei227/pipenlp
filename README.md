@@ -10,9 +10,6 @@
 ```bash
 pip install git+https://github.com/zhulei227/pipenlp
 ```  
-
-注意：只安装了部分必要的包，其他依赖包可在使用到相关模块时再自行安装，比如在使用`pipenlp.preprocessing.ExtractJieBaWords`时才会提示安装`pip install jieba`，所以建议先用少量数据检验pipeline流程的依赖包是否完整，在应用到大量数据上
-
 ## 使用  
 
 导入`PipeNLP`主程序
