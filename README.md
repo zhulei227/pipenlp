@@ -889,7 +889,388 @@ nlp.transform(data["text"]).head(5)
 </table>
 </div>
 
+## 高阶用法
+#### 自定义pipe模块  
+自需要实现一个包含了fit,transform,get_params和set_params这四个函数的类即可：  
+- fit:用于拟合模块中参数
+- transform:利用fit阶段拟合的参数去转换数据
+- get_params/set_params:主要用于模型的持久化   
 
+比如如下实现了一个对逐列归一化的模块
+
+
+```python
+import numpy as np
+import scipy.stats as ss
+class Normalization(object):
+    def __init__(self, normal_range=100, normal_type="cdf", std_range=10):
+        """
+        :param normal_range:
+        :param normal_type: cdf,range
+        :param std_range:
+        """
+        self.normal_range = normal_range
+        self.normal_type = normal_type
+        self.std_range = std_range
+        self.mean_std = dict()
+
+    def fit(self, s):
+        if self.normal_type == "cdf":
+            for col in s.columns:
+                col_value = s[col]
+                mean = np.median(col_value)
+                std = np.std(col_value) * self.std_range
+                self.mean_std[col] = (mean, std)
+        return self
+
+    def transform(self, s):
+        if self.normal_type == "cdf":
+            for col in s.columns:
+                if col in self.mean_std:
+                    s[col] = np.round(
+                        ss.norm.cdf((s[col] - self.mean_std[col][0]) / self.mean_std[col][1]) * self.normal_range, 2)
+        elif self.normal_type == "range":
+            for col in s.columns:
+                if col in self.mean_std:
+                    s[col] = self.normal_range * s[col]
+        return s
+
+    def get_params(self) -> dict:
+        return {"mean_std": self.mean_std, "normal_range": self.normal_range, "normal_type": self.normal_type}
+
+    def set_params(self, params: dict):
+        self.mean_std = params["mean_std"]
+        self.normal_range = params["normal_range"]
+        self.normal_type = params["normal_type"]
+```
+
+
+```python
+nlp=PipeNLP()
+nlp.pipe(ExtractChineseWords())\
+   .pipe(ExtractJieBaWords())\
+   .pipe(BagOfWords())\
+   .pipe(PCADecomposition(n_components=8))\
+   .pipe(LogisticRegressionClassification(y=data["label"]))\
+   .pipe(Normalization())
+
+nlp.fit(data["text"]).transform(data["text"]).head(5)
+```
+
+
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>积极</th>
+      <th>消极</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>50.44</td>
+      <td>49.56</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>53.94</td>
+      <td>46.06</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>49.74</td>
+      <td>50.26</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>56.22</td>
+      <td>43.78</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>53.58</td>
+      <td>46.42</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+### pipenlp的拆分与合并
+PipeNLP的pipe对象也可以是一个PipeNLP，所以我们以将过长的pipeline拆分为多个pipeline，分别fit后再进行组合，避免后面流程的pipe模块更新又要重新fit前面的pipe模块
+
+
+```python
+nlp1=PipeNLP()
+nlp1.pipe(ExtractChineseWords())\
+    .pipe(ExtractJieBaWords())\
+    .pipe(BagOfWords())\
+    .pipe(PCADecomposition(n_components=8))
+
+pca_df=nlp1.fit(data["text"]).transform(data["text"])
+pca_df.head(5)
+```
+
+
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>0</th>
+      <th>1</th>
+      <th>2</th>
+      <th>3</th>
+      <th>4</th>
+      <th>5</th>
+      <th>6</th>
+      <th>7</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>-1.257324</td>
+      <td>-0.222444</td>
+      <td>-0.217656</td>
+      <td>-0.118004</td>
+      <td>-0.204318</td>
+      <td>-0.156744</td>
+      <td>-0.009275</td>
+      <td>0.088116</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1.071957</td>
+      <td>0.266230</td>
+      <td>1.563062</td>
+      <td>0.070491</td>
+      <td>-1.205419</td>
+      <td>0.808515</td>
+      <td>-0.552603</td>
+      <td>-0.990944</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>-1.288506</td>
+      <td>-0.212731</td>
+      <td>-0.270413</td>
+      <td>-0.095124</td>
+      <td>-0.098725</td>
+      <td>-0.014406</td>
+      <td>-0.003268</td>
+      <td>0.106673</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>0.281789</td>
+      <td>-0.626053</td>
+      <td>2.274090</td>
+      <td>0.573257</td>
+      <td>1.360892</td>
+      <td>-0.242684</td>
+      <td>-0.069548</td>
+      <td>0.656460</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>-1.293974</td>
+      <td>-0.353290</td>
+      <td>0.239912</td>
+      <td>0.013726</td>
+      <td>0.844865</td>
+      <td>-0.353885</td>
+      <td>0.112731</td>
+      <td>-0.263181</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+```python
+nlp2=PipeNLP()
+nlp2.pipe(LogisticRegressionClassification(y=data["label"]))\
+    .pipe(Normalization())
+
+nlp2.fit(pca_df).transform(pca_df).head(5)
+```
+
+
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>积极</th>
+      <th>消极</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>50.45</td>
+      <td>49.55</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>53.90</td>
+      <td>46.10</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>49.74</td>
+      <td>50.26</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>56.27</td>
+      <td>43.73</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>53.67</td>
+      <td>46.33</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+```python
+nlp_combine=PipeNLP()
+nlp_combine.pipe(nlp1).pipe(nlp2)
+
+nlp_combine.transform(data["text"]).head(5)
+```
+
+
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>积极</th>
+      <th>消极</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>50.45</td>
+      <td>49.55</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>53.90</td>
+      <td>46.10</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>49.74</td>
+      <td>50.26</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>56.27</td>
+      <td>43.73</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>53.67</td>
+      <td>46.33</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+#### 持久化
+
+
+```python
+nlp_combine.save("nlp_combine.pkl")
+```
+
+
+```python
+nlp1=PipeNLP()
+nlp1.pipe(ExtractChineseWords())\
+    .pipe(ExtractJieBaWords())\
+    .pipe(BagOfWords())\
+    .pipe(PCADecomposition())
+
+nlp2=PipeNLP()
+nlp2.pipe(LogisticRegressionClassification())\
+    .pipe(Normalization())
+
+nlp_combine=PipeNLP()
+nlp_combine.pipe(nlp1).pipe(nlp2)
+nlp_combine.load("nlp_combine.pkl")
+```
+
+
+```python
+nlp_combine.transform(data["text"]).head(5)
+```
+
+
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>积极</th>
+      <th>消极</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>50.45</td>
+      <td>49.55</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>53.90</td>
+      <td>46.10</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>49.74</td>
+      <td>50.26</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>56.27</td>
+      <td>43.73</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>53.67</td>
+      <td>46.33</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
 ## TODO  
 

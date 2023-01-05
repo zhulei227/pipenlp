@@ -16,10 +16,10 @@ class PipeNLP(object):
         if show_process:
             for model in tqdm(self.models):
                 print(model.__class__)
-                x_ = model.fit(x_)
+                x_ = model.fit(x_).transform(x_)
         else:
             for model in self.models:
-                x_ = model.fit(x_)
+                x_ = model.fit(x_).transform(x_)
         return self
 
     def transform(self, x, show_process=False):
@@ -41,3 +41,12 @@ class PipeNLP(object):
         with open(path, "rb") as f:
             for i, params in enumerate(pickle.load(f)):
                 self.models[i].set_params(params)
+
+    def get_params(self) -> dict:
+        params = [model.get_params() for model in self.models]
+        return {"params": params}
+
+    def set_params(self, params: dict):
+        params = params["params"]
+        for i, param in enumerate(params):
+            self.models[i].set_params(param)

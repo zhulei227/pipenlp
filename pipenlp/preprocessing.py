@@ -7,7 +7,7 @@ class PreProcessing(object):
         raise Exception("need to implement")
 
     def fit(self, s):
-        return self.call(s)
+        return self
 
     def transform(self, s):
         return self.call(s)

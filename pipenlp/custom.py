@@ -5,10 +5,10 @@ from .type_check import *
 import numpy as np
 
 
-class Common(object):
+class Custom(object):
 
     def fit(self, s):
-        raise Exception("need to implement")
+        return self
 
     def transform(self, s):
         raise Exception("need to implement")
@@ -20,16 +20,9 @@ class Common(object):
         pass
 
 
-class MapValues(Common):
+class MapValues(Custom):
     def __init__(self, map_values: dict = None):
         self.map_values = map_values if map_values is not None else dict()
-
-    @check_dataframe_type
-    def fit(self, s: dataframe_type) -> dataframe_type:
-        for col in s.columns:
-            if col in self.map_values:
-                s[col] = np.round(s[col] / self.map_values[col][0] * self.map_values[col][1], 2)
-        return s
 
     def transform(self, s: dataframe_type) -> dataframe_type:
         for col in s.columns:

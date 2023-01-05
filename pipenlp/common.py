@@ -9,7 +9,7 @@ import scipy.stats as ss
 class Common(object):
 
     def fit(self, s):
-        raise Exception("need to implement")
+        return self
 
     def transform(self, s):
         raise Exception("need to implement")
@@ -55,13 +55,7 @@ class Normalization(Common):
                 mean = np.median(col_value)
                 std = np.std(col_value) * self.std_range
                 self.mean_std[col] = (mean, std)
-            for col in s.columns:
-                s[col] = np.round(
-                    ss.norm.cdf((s[col] - self.mean_std[col][0]) / self.mean_std[col][1]) * self.normal_range, 2)
-        elif self.normal_type == "range":
-            for col in s.columns:
-                s[col] = self.normal_range * s[col]
-        return s
+        return self
 
     def transform(self, s: dataframe_type) -> dataframe_type:
         if self.normal_type == "cdf":

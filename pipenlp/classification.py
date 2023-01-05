@@ -17,7 +17,7 @@ class Classification(object):
             self.num_class = len(self.id2label)
 
     def fit(self, s):
-        raise Exception("need to implement")
+        return self
 
     def transform(self, s):
         raise Exception("need to implement")
@@ -70,17 +70,16 @@ class LGBMClassification(Classification):
     @check_dataframe_type
     def fit(self, s: dataframe_type) -> dataframe_type:
         import lightgbm as lgb
-        s = self.pd2csr(s)
+        s_ = self.pd2csr(s)
         params = {
             'objective': 'multiclass',
             'num_class': self.num_class,
             'max_depth': self.max_depth,
             'verbose': -1
         }
-        self.lgb_model = lgb.train(params=params, train_set=lgb.Dataset(data=s, label=self.y),
+        self.lgb_model = lgb.train(params=params, train_set=lgb.Dataset(data=s_, label=self.y),
                                    num_boost_round=self.num_boost_round)
-        return pandas.DataFrame(self.lgb_model.predict(s),
-                                columns=[self.id2label.get(i) for i in range(self.num_class)])
+        return self
 
     def transform(self, s: dataframe_type) -> dataframe_type:
         s = self.pd2csr(s)
@@ -126,11 +125,10 @@ class LogisticRegressionClassification(Classification):
     @check_dataframe_type
     def fit(self, s: dataframe_type) -> dataframe_type:
         from sklearn.linear_model import LogisticRegression
-        s = self.pd2csr(s)
+        s_ = self.pd2csr(s)
         self.lr = LogisticRegression(multi_class=self.multi_class, solver=self.solver, max_iter=self.max_iter)
-        self.lr.fit(s, self.y)
-        return pandas.DataFrame(self.lr.predict_proba(s),
-                                columns=[self.id2label.get(i) for i in range(self.num_class)])
+        self.lr.fit(s_, self.y)
+        return self
 
     def transform(self, s: dataframe_type) -> dataframe_type:
         s = self.pd2csr(s)
@@ -176,11 +174,10 @@ class SVMClassification(Classification):
     @check_dataframe_type
     def fit(self, s: dataframe_type) -> dataframe_type:
         from sklearn.svm import SVC
-        s = self.pd2csr(s)
+        s_ = self.pd2csr(s)
         self.svm = SVC(kernel=self.kernel, decision_function_shape="ovo", gamma=self.gamma, C=self.C, probability=True)
-        self.svm.fit(s, self.y)
-        return pandas.DataFrame(self.svm.predict_proba(s),
-                                columns=[self.id2label.get(i) for i in range(self.num_class)])
+        self.svm.fit(s_, self.y)
+        return self
 
     def transform(self, s: dataframe_type) -> dataframe_type:
         s = self.pd2csr(s)
@@ -226,12 +223,11 @@ class DecisionTreeClassification(Classification):
     @check_dataframe_type
     def fit(self, s: dataframe_type) -> dataframe_type:
         from sklearn.tree import DecisionTreeClassifier
-        s = self.pd2csr(s)
+        s_ = self.pd2csr(s)
         self.tree = DecisionTreeClassifier(criterion=self.criterion, max_depth=self.max_depth,
                                            min_samples_leaf=self.min_samples_leaf)
-        self.tree.fit(s, self.y)
-        return pandas.DataFrame(self.tree.predict_proba(s),
-                                columns=[self.id2label.get(i) for i in range(self.num_class)])
+        self.tree.fit(s_, self.y)
+        return self
 
     def transform(self, s: dataframe_type) -> dataframe_type:
         s = self.pd2csr(s)
@@ -278,13 +274,12 @@ class RandomForestClassification(Classification):
     @check_dataframe_type
     def fit(self, s: dataframe_type) -> dataframe_type:
         from sklearn.ensemble import RandomForestClassifier
-        s = self.pd2csr(s)
+        s_ = self.pd2csr(s)
         self.tree = RandomForestClassifier(n_estimators=self.n_estimators, criterion=self.criterion,
                                            max_depth=self.max_depth,
                                            min_samples_leaf=self.min_samples_leaf)
-        self.tree.fit(s, self.y)
-        return pandas.DataFrame(self.tree.predict_proba(s),
-                                columns=[self.id2label.get(i) for i in range(self.num_class)])
+        self.tree.fit(s_, self.y)
+        return self
 
     def transform(self, s: dataframe_type) -> dataframe_type:
         s = self.pd2csr(s)
@@ -328,11 +323,10 @@ class KNeighborsClassification(Classification):
     @check_dataframe_type
     def fit(self, s: dataframe_type) -> dataframe_type:
         from sklearn.neighbors import KNeighborsClassifier
-        s = self.pd2csr(s)
+        s_ = self.pd2csr(s)
         self.knn = KNeighborsClassifier(n_neighbors=self.n_neighbors)
-        self.knn.fit(s, self.y)
-        return pandas.DataFrame(self.knn.predict_proba(s),
-                                columns=[self.id2label.get(i) for i in range(self.num_class)])
+        self.knn.fit(s_, self.y)
+        return self
 
     def transform(self, s: dataframe_type) -> dataframe_type:
         s = self.pd2csr(s)
@@ -375,11 +369,10 @@ class GaussianNBClassification(Classification):
     @check_dataframe_type
     def fit(self, s: dataframe_type) -> dataframe_type:
         from sklearn.naive_bayes import GaussianNB
-        s = self.pd2dense(s)
+        s_ = self.pd2dense(s)
         self.nb = GaussianNB()
-        self.nb.fit(s, self.y)
-        return pandas.DataFrame(self.nb.predict_proba(s),
-                                columns=[self.id2label.get(i) for i in range(self.num_class)])
+        self.nb.fit(s_, self.y)
+        return self
 
     def transform(self, s: dataframe_type) -> dataframe_type:
         s = self.pd2dense(s)
@@ -422,11 +415,10 @@ class MultinomialNBClassification(Classification):
     @check_dataframe_type
     def fit(self, s: dataframe_type) -> dataframe_type:
         from sklearn.naive_bayes import MultinomialNB
-        s = self.pd2csr(s)
+        s_ = self.pd2csr(s)
         self.nb = MultinomialNB()
-        self.nb.fit(s, self.y)
-        return pandas.DataFrame(self.nb.predict_proba(s),
-                                columns=[self.id2label.get(i) for i in range(self.num_class)])
+        self.nb.fit(s_, self.y)
+        return self
 
     def transform(self, s: dataframe_type) -> dataframe_type:
         s = self.pd2csr(s)
@@ -469,11 +461,10 @@ class BernoulliNBClassification(Classification):
     @check_dataframe_type
     def fit(self, s: dataframe_type) -> dataframe_type:
         from sklearn.naive_bayes import BernoulliNB
-        s = self.pd2csr(s)
+        s_ = self.pd2csr(s)
         self.nb = BernoulliNB()
-        self.nb.fit(s, self.y)
-        return pandas.DataFrame(self.nb.predict_proba(s),
-                                columns=[self.id2label.get(i) for i in range(self.num_class)])
+        self.nb.fit(s_, self.y)
+        return self
 
     def transform(self, s: dataframe_type) -> dataframe_type:
         s = self.pd2csr(s)

@@ -4,7 +4,7 @@ import numpy as np
 
 class RePresentation(object):
     def fit(self, s):
-        raise Exception("need to implement")
+        return self
 
     def transform(self, s):
         raise Exception("need to implement")
@@ -53,10 +53,8 @@ class BagOfWords(RePresentation):
             max_df=1.0,
             binary=False,
         )
-        tf_vectors_csr = self.tf.fit_transform(s)
-        return pandas.DataFrame.sparse.from_spmatrix(
-            tf_vectors_csr, s.index, self.tf.get_feature_names_out()
-        )
+        self.tf.fit(s)
+        return self
 
     def transform(self, s: series_type) -> dataframe_type:
         tf_vectors_csr = self.tf.transform(s)
@@ -108,11 +106,8 @@ class TFIDF(RePresentation):
             max_df=1.0,
             binary=False,
         )
-
-        tf_vectors_csr = self.tfidf.fit_transform(s)
-        return pandas.DataFrame.sparse.from_spmatrix(
-            tf_vectors_csr, s.index, self.tfidf.get_feature_names_out()
-        )
+        self.tfidf.fit(s)
+        return self
 
     def transform(self, s: series_type) -> dataframe_type:
         tf_vectors_csr = self.tfidf.transform(s)
@@ -151,10 +146,10 @@ class PCADecomposition(RePresentation):
         from sklearn.decomposition import PCA
         self.pca = PCA(n_components=self.n_components)
         self.pca.fit(s.values)
-        return pandas.DataFrame(self.pca.transform(s.values), index=s.index)
+        return self
 
     def transform(self, s: dataframe_type) -> dataframe_type:
-        return pandas.DataFrame(self.pca.transform(s.values), index=s.index)
+        return pandas.DataFrame(self.pca.transform(s.values))
 
     def get_params(self) -> dict:
         return {"pca": self.pca, "n_components": self.n_components}
@@ -188,10 +183,10 @@ class NMFDecomposition(RePresentation):
         from sklearn.decomposition import NMF
         self.nmf = NMF(n_components=self.n_components)
         self.nmf.fit(s.values)
-        return pandas.DataFrame(self.nmf.transform(s.values), index=s.index)
+        return self
 
     def transform(self, s: dataframe_type) -> dataframe_type:
-        return pandas.DataFrame(self.nmf.transform(s.values), index=s.index)
+        return pandas.DataFrame(self.nmf.transform(s.values))
 
     def get_params(self) -> dict:
         return {"nmf": self.nmf, "n_components": self.n_components}
@@ -225,14 +220,12 @@ class LdaTopicModel(RePresentation):
     def fit(self, s: series_type) -> dataframe_type:
         from gensim.corpora.dictionary import Dictionary
         from gensim.models.ldamulticore import LdaModel
-        from gensim import matutils
         texts = s.values.tolist()
         texts = [line.split(" ") for line in texts]
         self.common_dictionary = Dictionary(texts)
         common_corpus = [self.common_dictionary.doc2bow(text) for text in texts]
         self.lda_model = LdaModel(common_corpus, num_topics=self.num_topics)
-        vectors = matutils.corpus2dense(self.lda_model[common_corpus], num_terms=self.num_topics).T
-        return pandas.DataFrame(vectors, index=s.index)
+        return self
 
     def transform(self, s: series_type) -> dataframe_type:
         from gensim import matutils
@@ -240,7 +233,7 @@ class LdaTopicModel(RePresentation):
         texts = [line.split(" ") for line in texts]
         common_corpus = [self.common_dictionary.doc2bow(text) for text in texts]
         vectors = matutils.corpus2dense(self.lda_model[common_corpus], num_terms=self.num_topics).T
-        return pandas.DataFrame(vectors, index=s.index)
+        return pandas.DataFrame(vectors)
 
     def get_params(self) -> dict:
         return {"num_topics": self.num_topics, "common_dictionary": self.common_dictionary, "lda_model": self.lda_model}
@@ -275,14 +268,12 @@ class LsiTopicModel(RePresentation):
     def fit(self, s: series_type) -> dataframe_type:
         from gensim.corpora.dictionary import Dictionary
         from gensim.models import LsiModel
-        from gensim import matutils
         texts = s.values.tolist()
         texts = [line.split(" ") for line in texts]
         self.common_dictionary = Dictionary(texts)
         common_corpus = [self.common_dictionary.doc2bow(text) for text in texts]
         self.lsi_model = LsiModel(common_corpus, num_topics=self.num_topics, id2word=self.common_dictionary)
-        vectors = matutils.corpus2dense(self.lsi_model[common_corpus], num_terms=self.num_topics).T
-        return pandas.DataFrame(vectors, index=s.index)
+        return self
 
     def transform(self, s: series_type) -> dataframe_type:
         from gensim import matutils
@@ -290,7 +281,7 @@ class LsiTopicModel(RePresentation):
         texts = [line.split(" ") for line in texts]
         common_corpus = [self.common_dictionary.doc2bow(text) for text in texts]
         vectors = matutils.corpus2dense(self.lsi_model[common_corpus], num_terms=self.num_topics).T
-        return pandas.DataFrame(vectors, index=s.index)
+        return pandas.DataFrame(vectors)
 
     def get_params(self) -> dict:
         return {"num_topics": self.num_topics, "common_dictionary": self.common_dictionary, "lsi_model": self.lsi_model}
@@ -327,11 +318,7 @@ class Word2VecModel(RePresentation):
         texts = s.values.tolist()
         texts = [line.split(" ") for line in texts]
         self.w2v_model = Word2Vec(sentences=texts, vector_size=self.embedding_size, min_count=self.min_count)
-        vectors = [np.mean(np.asarray([self.w2v_model.wv[word] for word in line if word in self.w2v_model.wv]),
-                           axis=0) + np.zeros(shape=(self.embedding_size,))
-                   for line in texts]
-        # 填充nan
-        return pandas.DataFrame(vectors)
+        return self
 
     def transform(self, s: series_type) -> dataframe_type:
         texts = s.values.tolist()
@@ -377,14 +364,13 @@ class Doc2VecModel(RePresentation):
         texts = [line.split(" ") for line in texts]
         documents = [TaggedDocument(doc, [i]) for i, doc in enumerate(texts)]
         self.d2v_model = Doc2Vec(documents, vector_size=self.embedding_size, min_count=self.min_count)
-        vectors = [self.d2v_model.infer_vector(line) for line in texts]
-        return pandas.DataFrame(vectors, index=s.index)
+        return self
 
     def transform(self, s: series_type) -> dataframe_type:
         texts = s.values.tolist()
         texts = [line.split(" ") for line in texts]
         vectors = [self.d2v_model.infer_vector(line) for line in texts]
-        return pandas.DataFrame(vectors, index=s.index)
+        return pandas.DataFrame(vectors)
 
     def get_params(self) -> dict:
         return {"embedding_size": self.embedding_size, "d2v_model": self.d2v_model, "min_count": self.min_count}
@@ -421,11 +407,7 @@ class FastTextModel(RePresentation):
         texts = s.values.tolist()
         texts = [line.split(" ") for line in texts]
         self.fasttext_model = FastText(sentences=texts, vector_size=self.embedding_size, min_count=self.min_count)
-        vectors = [np.mean(np.asarray([self.fasttext_model.wv[word]
-                                       for word in line if word in self.fasttext_model.wv]), axis=0) + np.zeros(
-            shape=(self.embedding_size,))
-                   for line in texts]
-        return pandas.DataFrame(vectors)
+        return self
 
     def transform(self, s: series_type) -> dataframe_type:
         texts = s.values.tolist()
