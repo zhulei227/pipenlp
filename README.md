@@ -10,6 +10,13 @@
 ```bash
 pip install git+https://github.com/zhulei227/pipenlp
 ```  
+或
+
+```bash
+git clone https://github.com/zhulei227/pipenlp.git
+cd pipenlp
+python setup.py install
+```
 
 ## 使用  
 

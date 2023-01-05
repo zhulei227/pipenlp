@@ -58,9 +58,11 @@ class BagOfWords(RePresentation):
 
     def transform(self, s: series_type) -> dataframe_type:
         tf_vectors_csr = self.tf.transform(s)
-        return pandas.DataFrame.sparse.from_spmatrix(
-            tf_vectors_csr, s.index, self.tf.get_feature_names_out()
-        )
+        try:
+            feature_names = self.tf.get_feature_names()
+        except:
+            feature_names = self.tf.get_feature_names_out()
+        return pandas.DataFrame.sparse.from_spmatrix(data=tf_vectors_csr, columns=feature_names)
 
     def get_params(self) -> dict:
         return {"tf": self.tf}
@@ -111,9 +113,11 @@ class TFIDF(RePresentation):
 
     def transform(self, s: series_type) -> dataframe_type:
         tf_vectors_csr = self.tfidf.transform(s)
-        return pandas.DataFrame.sparse.from_spmatrix(
-            tf_vectors_csr, s.index, self.tfidf.get_feature_names_out()
-        )
+        try:
+            feature_names = self.tfidf.get_feature_names()
+        except:
+            feature_names = self.tfidf.get_feature_names_out()
+        return pandas.DataFrame.sparse.from_spmatrix(data=tf_vectors_csr, columns=feature_names)
 
     def get_params(self) -> dict:
         return {"tfidf": self.tfidf}
