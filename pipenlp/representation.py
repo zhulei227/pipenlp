@@ -327,16 +327,19 @@ class Word2VecModel(RePresentation):
         texts = s.values.tolist()
         texts = [line.split(" ") for line in texts]
         self.w2v_model = Word2Vec(sentences=texts, vector_size=self.embedding_size, min_count=self.min_count)
-        vectors = [np.mean(np.asarray([self.w2v_model.wv[word] for word in line if word in self.w2v_model.wv]), axis=0)
+        vectors = [np.mean(np.asarray([self.w2v_model.wv[word] for word in line if word in self.w2v_model.wv]),
+                           axis=0) + np.zeros(shape=(self.embedding_size,))
                    for line in texts]
-        return pandas.DataFrame(vectors, index=s.index)
+        # 填充nan
+        return pandas.DataFrame(vectors)
 
     def transform(self, s: series_type) -> dataframe_type:
         texts = s.values.tolist()
         texts = [line.split(" ") for line in texts]
-        vectors = [np.mean(np.asarray([self.w2v_model.wv[word] for word in line if word in self.w2v_model.wv]), axis=0)
+        vectors = [np.mean(np.asarray([self.w2v_model.wv[word] for word in line if word in self.w2v_model.wv]),
+                           axis=0) + np.zeros(shape=(self.embedding_size,))
                    for line in texts]
-        return pandas.DataFrame(vectors, index=s.index)
+        return pandas.DataFrame(vectors)
 
     def get_params(self) -> dict:
         return {"embedding_size": self.embedding_size, "w2v_model": self.w2v_model, "min_count": self.min_count}
@@ -419,17 +422,19 @@ class FastTextModel(RePresentation):
         texts = [line.split(" ") for line in texts]
         self.fasttext_model = FastText(sentences=texts, vector_size=self.embedding_size, min_count=self.min_count)
         vectors = [np.mean(np.asarray([self.fasttext_model.wv[word]
-                                       for word in line if word in self.fasttext_model.wv]), axis=0)
+                                       for word in line if word in self.fasttext_model.wv]), axis=0) + np.zeros(
+            shape=(self.embedding_size,))
                    for line in texts]
-        return pandas.DataFrame(vectors, index=s.index)
+        return pandas.DataFrame(vectors)
 
     def transform(self, s: series_type) -> dataframe_type:
         texts = s.values.tolist()
         texts = [line.split(" ") for line in texts]
         vectors = [np.mean(np.asarray([self.fasttext_model.wv[word]
-                                       for word in line if word in self.fasttext_model.wv]), axis=0)
+                                       for word in line if word in self.fasttext_model.wv]), axis=0) + np.zeros(
+            shape=(self.embedding_size,))
                    for line in texts]
-        return pandas.DataFrame(vectors, index=s.index)
+        return pandas.DataFrame(vectors)
 
     def get_params(self) -> dict:
         return {"embedding_size": self.embedding_size, "fasttext_model": self.fasttext_model,
