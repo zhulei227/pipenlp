@@ -8,7 +8,7 @@
 
 ## 安装
 ```bash
-pip install git+https://github.com/zhulei227/pipenlp
+pip install git+http://github.com/zhulei227/pipenlp
 ```  
 
 ## 使用  
