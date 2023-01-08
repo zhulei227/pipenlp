@@ -1,25 +1,21 @@
-from .type_check import *
+import re
 import string
 
+from .base import *
 
-class PreProcessing(object):
-    def call(self, s):
-        raise Exception("need to implement")
 
+class SeriesPipeObject(PipeObject):
+    def __init__(self, name=None, transform_check_max_number_error=1e-5):
+        PipeObject.__init__(self, name, transform_check_max_number_error)
+
+    @check_series_type
     def fit(self, s):
+        self.input_col_names = [s.name]
+        self.output_col_names = [s.name]
         return self
 
-    def transform(self, s):
-        return self.call(s)
 
-    def get_params(self) -> dict:
-        return dict()
-
-    def set_params(self, params: dict):
-        pass
-
-
-class Lower(PreProcessing):
+class Lower(SeriesPipeObject):
     """
     input type:pandas.series
     input like:
@@ -35,11 +31,15 @@ class Lower(PreProcessing):
     """
 
     @check_series_type
-    def call(self, s):
+    def transform(self, s):
         return s.str.lower()
 
+    @check_dict_type
+    def transform_single(self, s: dict_type) -> dict_type:
+        return {self.output_col_names[0]: str(s.get(self.input_col_names[0])).lower()}
 
-class Upper(PreProcessing):
+
+class Upper(SeriesPipeObject):
     """
     input type:pandas.series
     input like:
@@ -55,11 +55,15 @@ class Upper(PreProcessing):
     """
 
     @check_series_type
-    def call(self, s: series_type) -> series_type:
+    def transform(self, s):
         return s.str.upper()
 
+    @check_dict_type
+    def transform_single(self, s: dict_type) -> dict_type:
+        return {self.output_col_names[0]: str(s.get(self.input_col_names[0])).upper()}
 
-class RemoveDigits(PreProcessing):
+
+class RemoveDigits(SeriesPipeObject):
     """
     input type:pandas.series
     input like:
@@ -75,11 +79,16 @@ class RemoveDigits(PreProcessing):
     """
 
     @check_series_type
-    def call(self, s: series_type) -> series_type:
+    def transform(self, s: series_type) -> series_type:
         return s.str.replace(r"\d+", "")
 
+    @check_dict_type
+    def transform_single(self, s: dict_type) -> dict_type:
+        text = re.sub(r"\d+", "", str(s.get(self.input_col_names[0])))
+        return {self.output_col_names[0]: text}
 
-class ReplaceDigits(PreProcessing):
+
+class ReplaceDigits(SeriesPipeObject):
     """
     input type:pandas.series
     input like:
@@ -94,21 +103,30 @@ class ReplaceDigits(PreProcessing):
     |j[d]k[d]|
     """
 
-    def __init__(self, symbols="[d]"):
+    def __init__(self, symbols="[d]", name=None, transform_check_max_number_error=1e-5):
+        SeriesPipeObject.__init__(self, name, transform_check_max_number_error)
         self.symbols = symbols
 
     @check_series_type
-    def call(self, s: series_type) -> series_type:
+    def transform(self, s: series_type) -> series_type:
         return s.str.replace(r"\d+", self.symbols)
 
+    @check_dict_type
+    def transform_single(self, s: dict_type) -> dict_type:
+        text = re.sub(r"\d+", self.symbols, str(s.get(self.input_col_names[0])))
+        return {self.output_col_names[0]: text}
+
     def get_params(self) -> dict:
-        return {"symbols": self.symbols}
+        params = SeriesPipeObject.get_params(self)
+        params.update({"symbols": self.symbols})
+        return params
 
     def set_params(self, params: dict):
+        SeriesPipeObject.set_params(self, params)
         self.symbols = params["symbols"]
 
 
-class RemovePunctuation(PreProcessing):
+class RemovePunctuation(SeriesPipeObject):
     """
     input type:pandas.series
     input like:
@@ -124,11 +142,17 @@ class RemovePunctuation(PreProcessing):
     """
 
     @check_series_type
-    def call(self, s: series_type) -> series_type:
+    def transform(self, s: series_type) -> series_type:
         return s.str.replace(rf"([{string.punctuation}+'，。！（）“‘？：；】【、'])+", "")
 
+    @check_dict_type
+    def transform_single(self, s: dict_type) -> dict_type:
+        puns = rf"([{string.punctuation}+'，。！（）“‘？：；】【、'])+"
+        text = re.sub(puns, "", str(s.get(self.input_col_names[0])))
+        return {self.output_col_names[0]: text}
 
-class ReplacePunctuation(PreProcessing):
+
+class ReplacePunctuation(SeriesPipeObject):
     """
     input type:pandas.series
     input like:
@@ -143,21 +167,31 @@ class ReplacePunctuation(PreProcessing):
     |abc[p]|
     """
 
-    def __init__(self, symbols="[p]"):
+    def __init__(self, symbols="[p]", name=None, transform_check_max_number_error=1e-5):
+        SeriesPipeObject.__init__(self, name, transform_check_max_number_error)
         self.symbols = symbols
 
     @check_series_type
-    def call(self, s: series_type) -> series_type:
+    def transform(self, s: series_type) -> series_type:
         return s.str.replace(rf"([{string.punctuation}+'，。！（）“‘？：；】【、'])+", self.symbols)
 
+    @check_dict_type
+    def transform_single(self, s: dict_type) -> dict_type:
+        puns = rf"([{string.punctuation}+'，。！（）“‘？：；】【、'])+"
+        text = re.sub(puns, self.symbols, str(s.get(self.input_col_names[0])))
+        return {self.output_col_names[0]: text}
+
     def get_params(self) -> dict:
-        return {"symbols": self.symbols}
+        params = SeriesPipeObject.get_params(self)
+        params.update({"symbols": self.symbols})
+        return params
 
     def set_params(self, params: dict):
+        SeriesPipeObject.set_params(self, params)
         self.symbols = params["symbols"]
 
 
-class RemoveWhitespace(PreProcessing):
+class RemoveWhitespace(SeriesPipeObject):
     """
     input type:pandas.series
     input like:
@@ -173,11 +207,17 @@ class RemoveWhitespace(PreProcessing):
     """
 
     @check_series_type
-    def call(self, s: series_type) -> series_type:
+    def transform(self, s: series_type) -> series_type:
         return s.str.replace("\xa0", " ").str.split().str.join("")
 
+    @check_dict_type
+    def transform_single(self, s: dict_type) -> dict_type:
+        text = re.sub(r"\xa0", " ", str(s.get(self.input_col_names[0])))
+        text = "".join(text.split())
+        return {self.output_col_names[0]: text}
 
-class RemoveStopWords(PreProcessing):
+
+class RemoveStopWords(SeriesPipeObject):
     """
     stop_words=["ab"]
     ----------------------------
@@ -194,7 +234,8 @@ class RemoveStopWords(PreProcessing):
     |abc|
     """
 
-    def __init__(self, stop_words=None, stop_words_path=None):
+    def __init__(self, stop_words=None, stop_words_path=None, name=None, transform_check_max_number_error=1e-5):
+        SeriesPipeObject.__init__(self, name, transform_check_max_number_error)
         self.stop_words = set()
         if stop_words is not None:
             for word in stop_words:
@@ -211,17 +252,24 @@ class RemoveStopWords(PreProcessing):
         return " ".join(words)
 
     @check_series_type
-    def call(self, s: series_type) -> series_type:
+    def transform(self, s: series_type) -> series_type:
         return s.apply(lambda x: self.apply_function(x))
 
+    @check_dict_type
+    def transform_single(self, s: dict_type):
+        return {self.output_col_names[0]: self.apply_function(s.get(self.input_col_names[0]))}
+
     def get_params(self) -> dict:
-        return {"stop_words": self.stop_words}
+        params = SeriesPipeObject.get_params(self)
+        params.update({"stop_words": self.stop_words})
+        return params
 
     def set_params(self, params: dict):
+        SeriesPipeObject.set_params(self, params)
         self.stop_words = params["stop_words"]
 
 
-class ExtractKeyWords(PreProcessing):
+class ExtractKeyWords(SeriesPipeObject):
     """
     key_words=["ab","cd"]
     ----------------------------
@@ -238,7 +286,8 @@ class ExtractKeyWords(PreProcessing):
     |ab|
     """
 
-    def __init__(self, key_words=None, key_words_path=None):
+    def __init__(self, key_words=None, key_words_path=None, name=None, transform_check_max_number_error=1e-5):
+        SeriesPipeObject.__init__(self, name, transform_check_max_number_error)
         import ahocorasick
         self.actree = ahocorasick.Automaton()
         if key_words is not None:
@@ -257,17 +306,24 @@ class ExtractKeyWords(PreProcessing):
         return " ".join(words)
 
     @check_series_type
-    def call(self, s: series_type) -> series_type:
+    def transform(self, s: series_type) -> series_type:
         return s.apply(lambda x: self.apply_function(x))
 
+    @check_dict_type
+    def transform_single(self, s: dict_type):
+        return {self.output_col_names[0]: self.apply_function(s.get(self.input_col_names[0]))}
+
     def get_params(self) -> dict:
-        return {"actree": self.actree}
+        params = SeriesPipeObject.get_params(self)
+        params.update({"actree": self.actree})
+        return params
 
     def set_params(self, params: dict):
+        SeriesPipeObject.set_params(self, params)
         self.actree = params["actree"]
 
 
-class AppendKeyWords(PreProcessing):
+class AppendKeyWords(SeriesPipeObject):
     """
     key_words=["ab","cd"]
     ----------------------------
@@ -284,7 +340,8 @@ class AppendKeyWords(PreProcessing):
     |abc def ab|
     """
 
-    def __init__(self, key_words=None, key_words_path=None):
+    def __init__(self, key_words=None, key_words_path=None, name=None, transform_check_max_number_error=1e-5):
+        SeriesPipeObject.__init__(self, name, transform_check_max_number_error)
         import ahocorasick
         self.actree = ahocorasick.Automaton()
         if key_words is not None:
@@ -303,17 +360,24 @@ class AppendKeyWords(PreProcessing):
         return s + " " + " ".join(words)
 
     @check_series_type
-    def call(self, s: series_type) -> series_type:
+    def transform(self, s: series_type) -> series_type:
         return s.apply(lambda x: self.apply_function(x))
 
+    @check_dict_type
+    def transform_single(self, s: dict_type):
+        return {self.output_col_names[0]: self.apply_function(s.get(self.input_col_names[0]))}
+
     def get_params(self) -> dict:
-        return {"actree": self.actree}
+        params = SeriesPipeObject.get_params(self)
+        params.update({"actree": self.actree})
+        return params
 
     def set_params(self, params: dict):
+        SeriesPipeObject.set_params(self, params)
         self.actree = params["actree"]
 
 
-class ExtractChineseWords(PreProcessing):
+class ExtractChineseWords(SeriesPipeObject):
     """
     input type:pandas.series
     input like:
@@ -333,12 +397,16 @@ class ExtractChineseWords(PreProcessing):
         import re
         return "".join(re.findall(r'[\u4e00-\u9fa5]', s))
 
+    @check_dict_type
+    def transform_single(self, s: dict_type):
+        return {self.output_col_names[0]: self.apply_function(s.get(self.input_col_names[0]))}
+
     @check_series_type
-    def call(self, s: series_type) -> series_type:
+    def transform(self, s: series_type) -> series_type:
         return s.apply(lambda x: self.apply_function(x))
 
 
-class ExtractNGramWords(PreProcessing):
+class ExtractNGramWords(SeriesPipeObject):
     """
     demo1:
     n_grams=[2]
@@ -371,7 +439,8 @@ class ExtractNGramWords(PreProcessing):
     |abc def abcdef|
     """
 
-    def __init__(self, n_grams=None):
+    def __init__(self, n_grams=None, name=None, transform_check_max_number_error=1e-5):
+        SeriesPipeObject.__init__(self, name, transform_check_max_number_error)
         if n_grams is not None:
             self.n_grams = n_grams
         else:
@@ -393,17 +462,24 @@ class ExtractNGramWords(PreProcessing):
         return " ".join(words)
 
     @check_series_type
-    def call(self, s: series_type) -> series_type:
+    def transform(self, s: series_type) -> series_type:
         return s.apply(lambda x: self.apply_function(x))
 
+    @check_dict_type
+    def transform_single(self, s: dict_type):
+        return {self.output_col_names[0]: self.apply_function(s.get(self.input_col_names[0]))}
+
     def get_params(self) -> dict:
-        return {"n_grams": self.n_grams}
+        params = SeriesPipeObject.get_params(self)
+        params.update({"n_grams": self.n_grams})
+        return params
 
     def set_params(self, params: dict):
+        SeriesPipeObject.set_params(self, params)
         self.n_grams = params["n_grams"]
 
 
-class ExtractJieBaWords(PreProcessing):
+class ExtractJieBaWords(SeriesPipeObject):
     """
     input type:pandas.series
     input like:
@@ -418,7 +494,8 @@ class ExtractJieBaWords(PreProcessing):
     |北京 清华大学|
     """
 
-    def __init__(self, cut_all=False):
+    def __init__(self, cut_all=False, name=None, transform_check_max_number_error=1e-5):
+        SeriesPipeObject.__init__(self, name, transform_check_max_number_error)
         self.cut_all = cut_all
 
     def apply_function(self, s):
@@ -427,11 +504,18 @@ class ExtractJieBaWords(PreProcessing):
         return " ".join(jieba.cut(s, cut_all=self.cut_all))
 
     @check_series_type
-    def call(self, s: series_type) -> series_type:
+    def transform(self, s: series_type) -> series_type:
         return s.apply(lambda x: self.apply_function(x))
 
+    @check_dict_type
+    def transform_single(self, s: dict_type):
+        return {self.output_col_names[0]: self.apply_function(s.get(self.input_col_names[0]))}
+
     def get_params(self) -> dict:
-        return {"cut_all": self.cut_all}
+        params = SeriesPipeObject.get_params(self)
+        params.update({"cut_all": self.cut_all})
+        return params
 
     def set_params(self, params: dict):
+        SeriesPipeObject.set_params(self, params)
         self.cut_all = params["cut_all"]

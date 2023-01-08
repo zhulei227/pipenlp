@@ -907,15 +907,12 @@ nlp.transform(data["text"]).head(5)
 
 
 ```python
+from pipenlp.base import PipeObject
 import numpy as np
 import scipy.stats as ss
-class Normalization(object):
+class Normalization(PipeObject):
     def __init__(self, normal_range=100, normal_type="cdf", std_range=10):
-        """
-        :param normal_range:
-        :param normal_type: cdf,range
-        :param std_range:
-        """
+        PipeObject.__init__(self)
         self.normal_range = normal_range
         self.normal_type = normal_type
         self.std_range = std_range
@@ -928,24 +925,30 @@ class Normalization(object):
                 mean = np.median(col_value)
                 std = np.std(col_value) * self.std_range
                 self.mean_std[col] = (mean, std)
+        self.input_col_names = s.columns.tolist()
         return self
 
     def transform(self, s):
+        s_ = copy.copy(s)
         if self.normal_type == "cdf":
-            for col in s.columns:
+            for col in s_.columns:
                 if col in self.mean_std:
-                    s[col] = np.round(
-                        ss.norm.cdf((s[col] - self.mean_std[col][0]) / self.mean_std[col][1]) * self.normal_range, 2)
+                    s_[col] = np.round(
+                        ss.norm.cdf((s_[col] - self.mean_std[col][0]) / self.mean_std[col][1]) * self.normal_range, 2)
         elif self.normal_type == "range":
-            for col in s.columns:
+            for col in s_.columns:
                 if col in self.mean_std:
-                    s[col] = self.normal_range * s[col]
-        return s
+                    s_[col] = self.normal_range * s_[col]
+        self.output_col_names = s_.columns.tolist()
+        return s_
 
-    def get_params(self) -> dict:
-        return {"mean_std": self.mean_std, "normal_range": self.normal_range, "normal_type": self.normal_type}
+    def get_params(self):
+        params = PipeObject.get_params(self)
+        params.update({"mean_std": self.mean_std, "normal_range": self.normal_range, "normal_type": self.normal_type})
+        return params
 
-    def set_params(self, params: dict):
+    def set_params(self, params):
+        PipeObject.set_params(self, params)
         self.mean_std = params["mean_std"]
         self.normal_range = params["normal_range"]
         self.normal_type = params["normal_type"]
@@ -1279,6 +1282,112 @@ nlp_combine.transform(data["text"]).head(5)
 </table>
 </div>
 
+### 部署生产环境  
+#### transform_single
+通常，在生产线上使用pandas效率并不高，且生产的输入格式通常是字典格式(json)，所以如果需要部署生产，我们需要额外添加一个函数：  
+- transform_single:实现与transform一致的功能，而input和output需要修改为字典格式  
+
+
+
+```python
+nlp=PipeNLP()
+nlp.pipe(ExtractChineseWords())\
+   .pipe(ExtractJieBaWords())\
+   .pipe(BagOfWords())\
+   .pipe(PCADecomposition(n_components=2))\
+   .pipe(LGBMClassification(y=data["label"]))
+nlp.fit(data["text"])
+```
+
+
+
+
+    <pipenlp.pipenlp.PipeNLP at 0x2319c46a1c8>
+
+
+
+
+```python
+nlp.transform_single({"text":"空间大，相对来说舒适性较好，性比价好些。"})
+```
+
+
+
+
+    {'积极': 0.8888528928971476, '消极': 0.11114710710285232}
+
+
+
+#### 自定义pipe模块
+接着为前面的Normalization类再加一个transform_single函数
+
+
+```python
+class NormalizationExtend(Normalization):
+    def transform_single(self, s):
+        s_ = copy.copy(s)
+        if self.normal_type == "cdf":
+            for col in s_.keys():
+                if col in self.mean_std:
+                    s_[col] = np.round(
+                        ss.norm.cdf((s_[col] - self.mean_std[col][0]) / self.mean_std[col][1]) * self.normal_range, 2)
+        elif self.normal_type == "range":
+            for col in s_.keys():
+                if col in self.mean_std:
+                    s_[col] = self.normal_range * s_[col]
+        return s_
+```
+
+
+```python
+nlp=PipeNLP()
+nlp.pipe(ExtractChineseWords())\
+   .pipe(ExtractJieBaWords())\
+   .pipe(FastTextModel())\
+   .pipe(LGBMClassification(y=data["label"]))\
+   .pipe(NormalizationExtend())
+nlp.fit(data["text"])
+```
+
+
+
+
+    <pipenlp.pipenlp.PipeNLP at 0x231996dad08>
+
+
+
+
+```python
+nlp.transform_single({"text":"空间大，相对来说舒适性较好，性比价好些。"})
+```
+
+
+
+
+    {'积极': 54.18, '消极': 45.82}
+
+
+
+#### 自动化测试
+部署生产环境之前，我们通常要关注两点：  
+- 离线训练模型和在线预测模型的一致性，即tranform和transform_single的一致性；  
+- transform_single对当条数据的预测性能  
+
+这些可以通过调用如下函数，进行自动化测试：  
+- auto_check_transform：只要有打印[success]，则表示一致性测试通过，性能测试表示为[*]毫秒/每条数据，如果有异常则会直接抛出，并中断后续pipe模块的测试
+
+
+```python
+nlp.auto_check_transform(data["text"])
+```
+
+    (<class 'pipenlp.preprocessing.ExtractChineseWords'>)  module transform check [success], single transform speed:[0.01]ms/it
+    (<class 'pipenlp.preprocessing.ExtractJieBaWords'>)  module transform check [success], single transform speed:[0.17]ms/it
+    (<class 'pipenlp.representation.FastTextModel'>)  module transform check [success], single transform speed:[2.09]ms/it
+    (<class 'pipenlp.classification.LGBMClassification'>)  module transform check [success], single transform speed:[1.76]ms/it
+    (<class '__main__.NormalizationExtend'>)  module transform check [success], single transform speed:[0.16]ms/it
+    
+
 ## TODO  
 
 - 加入TextCNN、HAT、LSTM+Attention、Bert更高阶模型  
@@ -1288,3 +1397,4 @@ nlp_combine.transform(data["text"]).head(5)
 ```python
 
 ```
+
